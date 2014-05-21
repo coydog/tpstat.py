@@ -6,9 +6,48 @@ import curses
 from os import statvfs
 from procfs import Proc
 
-multiplier = 0.1
+#multiplier = 0.1
 k = 1024
-#multiplier = 1
+multiplier = 1
+
+class deviceStats:
+	"per-device statistics and methods for displaying them"
+
+	def __init__(self, position, dev):
+		self.lines = 6 # all fields plus a newline
+		self.position = position
+		self.dev = dev
+		self.count = 0
+		self.val = proc.diskstats[self.dev].read.sectors
+		self.lastVal = self.val
+		self.delta = 0
+		self.avg = 0
+		self.peak = 0
+		self.total = 0
+		self.sectorSize = statvfs("/dev/" + self.dev).f_bsize
+		print "sectorSize: " , self.sectorSize
+
+	def calculate (self):
+		self.count += 1
+		self.val = proc.diskstats[self.dev].read.sectors
+		self.delta = (self.val - self.lastVal) * self.sectorSize
+		self.total += self.delta
+		self.avg = self.total / self.count #TODO some math with interval for rate
+		if self.delta > self.peak:
+			self.peak = self.delta
+
+		self.lastVal = self.val
+		#time.sleep(1 * multiplier)
+
+	def printStats (self):
+		startLine = self.position * self.lines
+		stdscr.addstr(startLine, 0, "/dev/" + self.dev);
+		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.delta))
+		stdscr.addstr(startLine+2, 0, "Avg:\t" + formatReadableRate(self.avg))
+		stdscr.addstr(startLine+3, 0, "Peak:\t" + formatReadableRate(self.peak))
+		stdscr.addstr(startLine+4, 0, "Total:\t" + formatReadableAbs(self.total))
+		
+
 
 def formatReadableAbs(bytes):
 	ret = str(bytes) + "\tbytes\t"
@@ -47,39 +86,19 @@ stdscr = curses.initscr()
 curses.noecho()
 curses.cbreak() # handle input before receiving newlines
 
-sectorSize = statvfs("/dev/sda5").f_bsize
-print "sectorSize: " , sectorSize
-
 #TODO: use list of devices and gather from each
 try:
-	total = 0
-	peak = 0
-	avg = 0
-	count = 0
-	val = proc.diskstats.sda5.read.sectors
-	delta = 0;
+
+	ds = deviceStats(0, "sdc") 
 
 	while 1:
-		count += 1
-		total += delta
-		avg = total / count
-		if delta > peak:
-			peak = delta
-
-		lastVal = val
+		ds.calculate()
 		time.sleep(1 * multiplier)
-		val = proc.diskstats.sda5.read.sectors
-		delta = (val - lastVal) * sectorSize
 		#print(delta)
-#stdscr.clear()
-		stdscr.addstr(0, 0, "Cur:\t" + formatReadableRate(delta))
-		stdscr.addstr(1, 0, "Avg:\t" + formatReadableRate(avg))
-		stdscr.addstr(2, 0, "Peak:\t" + formatReadableRate(peak))
-		stdscr.addstr(3, 0, "Total:\t" + formatReadableAbs(total))
+		stdscr.clear()
+		ds.printStats()
 		stdscr.refresh()
 
-
-# TODO: catch block or something?
 except KeyboardInterrupt:
 	print "In except block"
 	#time.sleep(1)
