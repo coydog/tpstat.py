@@ -8,7 +8,7 @@ from procfs import Proc
 
 #interval = 0.1
 k = 1024
-interval = .3
+interval = .1
 
 def getMounts (device):
 	print "getMounts"
@@ -20,12 +20,44 @@ def getMounts (device):
 	p = Proc()
 
 #for mount in p.mounts.device(node):
-	for mount in p.mounts:
-		print mount
+#for mount in p.mounts:
+#		print mount
 #		ret.append(str(mount))
 
-	return ret
+#	return ret
 
+class netStats:
+	"per-interface statistics and display methods"
+	def __init__(self, position, dev):
+		self.lines = 6
+		self.position = position
+		self.dev = dev
+		self.count = 0
+		self.val = proc.net.dev[self.dev].receive.bytes
+		self.lastVal = self.val
+		self.delta = 0
+		self.avg = 0
+		self.peak = 0
+		self.total = 0
+	
+	def calculate (self):
+		self.count += 1
+		self.val = proc.net.dev[self.dev]["receive"].bytes
+		self.delta = self.val - self.lastVal
+		self.total += self.delta
+		self.avg = self.total / self.count
+		if self.delta > self.peak:
+			self.peak = self.delta
+		self.lastVal = self.val
+
+	def printStats (self):
+		startLine = self.position * self.lines
+		stdscr.addstr(startLine, 0, "interface " + self.dev + "\t ")
+		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.delta))
+		stdscr.addstr(startLine+2, 0, "\t" + formatReadableRate(self.delta, True))
+		stdscr.addstr(startLine+3, 0, "Avg:\t" + formatReadableRate(self.avg))
+		stdscr.addstr(startLine+4, 0, "Peak:\t" + formatReadableRate(self.peak))
+		stdscr.addstr(startLine+5, 0, "Total:\t" + formatReadableAbs(self.total))
 
 class deviceStats:
 	"per-device statistics and methods for displaying them"
@@ -66,7 +98,6 @@ class deviceStats:
 		stdscr.addstr(startLine+4, 0, "Total:\t" + formatReadableAbs(self.total))
 		
 
-
 def formatReadableAbs(bytes):
 	ret = str(bytes) + "\tbytes\t"
 	if bytes >= k:
@@ -82,13 +113,16 @@ def formatReadableAbs(bytes):
 	return ret
 
 
-def formatReadableRate(bytes):
+def formatReadableRate(bytes, bits = False):
 	bytesPerSecond = float(bytes) / interval
 	ret = str(bytesPerSecond) + "\tbytes/sec\t"
 	if bytesPerSecond >= k:
 		ret = str(bytesPerSecond / k) + "\tKB/sec\t"
 	if bytesPerSecond >= k**2:
-		ret = str(bytesPerSecond / k**2) + "\tMB/sec\t"
+		if bits:
+			ret = str((bytesPerSecond / k**2) * 8) + "\tMbps\t"
+		else:
+			ret = str(bytesPerSecond / k**2) + "\tMB/sec\t"
 	if bytesPerSecond >= k**3:
 		ret = str(bytesPerSecond / k**3) + "\tGB/sec\t"
 	if bytesPerSecond >= k**4:
@@ -96,6 +130,7 @@ def formatReadableRate(bytes):
 	if bytesPerSecond >= k**5:
 		ret = str(bytesPerSecond / k**4) + "\tHello future person!"
 	return ret
+
 
 # This stuff is good canditate for __init__
 proc = Proc()
@@ -110,13 +145,15 @@ try:
 	count = 0
 	if len(sys.argv) == 1: # TODO:print stderr correctly
 		print "Error: need a device list on the command line"
-		throw
-		
+
 	for arg in sys.argv:
 		if count > 0: # LOL
 			print "adding " + arg
 			devList.append(deviceStats(count, arg))
 		count += 1
+
+	devList.append(netStats(count, "p5p1"))
+	count += 1
 		
 #	devList.append(deviceStats(0, "sdc")) 
 #	devList.append(deviceStats(1, "sda3")) 
