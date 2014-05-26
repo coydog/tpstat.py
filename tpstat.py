@@ -26,6 +26,8 @@ def getMounts (device):
 
 #	return ret
 
+
+
 class netStats:
 	"per-interface statistics and display methods"
 	def __init__(self, position, dev):
@@ -59,7 +61,7 @@ class netStats:
 		stdscr.addstr(startLine+4, 0, "Peak:\t" + formatReadableRate(self.peak))
 		stdscr.addstr(startLine+5, 0, "Total:\t" + formatReadableAbs(self.total))
 
-class deviceStats:
+class blockDeviceStats:
 	"per-device statistics and methods for displaying them"
 
 	def __init__(self, position, dev):
@@ -149,16 +151,16 @@ try:
 	for arg in sys.argv:
 		if count > 0: # LOL
 			print "adding " + arg
-			devList.append(deviceStats(count, arg))
+			devList.append(blockDeviceStats(count, arg))
 		count += 1
 
 	devList.append(netStats(count, "p5p1"))
 	count += 1
 		
-#	devList.append(deviceStats(0, "sdc")) 
-#	devList.append(deviceStats(1, "sda3")) 
+#	devList.append(blockDeviceStats(0, "sdc")) 
+#	devList.append(blockDeviceStats(1, "sda3")) 
 
-#	ds = deviceStats(0, "sdc") 
+#	ds = blockDeviceStats(0, "sdc") 
 
 	while 1:
 		time.sleep(1 * interval)
