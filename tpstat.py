@@ -11,6 +11,7 @@ k = 1024
 interval = .1
 
 def getMounts (device):
+	"work in progress, will eventually look up mounts per device"
 	print "getMounts"
 	ret = []
 	ret.append("/foo")
@@ -28,7 +29,7 @@ def getMounts (device):
 
 
 
-class netStats:
+class netDeviceStats:
 	"per-interface statistics and display methods"
 	def __init__(self, position, dev):
 		self.lines = 6
@@ -154,7 +155,7 @@ try:
 			devList.append(blockDeviceStats(count, arg))
 		count += 1
 
-	devList.append(netStats(count, "p5p1"))
+	devList.append(netDeviceStats(count, "p5p1"))
 	count += 1
 		
 #	devList.append(blockDeviceStats(0, "sdc")) 
