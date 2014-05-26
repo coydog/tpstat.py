@@ -2,6 +2,7 @@
 #
 
 import traceback
+import getopt
 import time
 import curses
 from os import statvfs,sys
@@ -161,26 +162,45 @@ def formatReadableRate(bytes, bits = False):
 
 #TODO: use list of devices and gather from each
 try:
+	blockDevs,netDevs = [],[]
+	optlist, args = getopt.getopt(sys.argv[1:], "b:i:")
+#blockDevs = []
+	print str(optlist)+str(args)
+	for i in optlist:
+		opt = i[0]
+		arg = i[1]
+		print "opt is "	+ str(i[0])
+		print "arg is " + str(i[1])
+		if opt == "-b":
+#reader = csv.reader(arg)
+			blockDevs = arg.split(",")
+			print "parsed blockDevs:" + str(blockDevs)
+		elif opt == "-i":
+			netDevs = arg.split(",")
+			print "parsed netDevs:" + str(netDevs)
+
+
 	devList = []
 	count = 0
+	#TODO: clean this up
 	if len(sys.argv) == 1: # TODO:print stderr correctly
 		print "Error: need a device list on the command line"
+	if not blockDevs and not netDevs:
+		print "usage: " + sys.argv[0] + " [-i <comma-delimited net interface list>][-b <comma-delimited drive list>]"
+		print "Example: " + sys.argv[0] + " -i eth0 -b sda,sda1,sda3,sdb,sdc"
+		raise Exception ("bad args")
 
-	blockDevs = sys.argv;
-
+	# these two loops could probably be factored out with the new inheritance model
+	# and building devList could be handled during arg parsing
 	for dev in blockDevs:
-		if count > 0: # LOL
-			print "adding " + dev 
-			devList.append(BlockDeviceStats(count-1, dev))
+		print "adding " + dev 
+		devList.append(BlockDeviceStats(count, dev))
 		count += 1
-
-	devList.append(NetDeviceStats(count-1, "p5p1"))
-	count += 1
-		
-#	devList.append(BlockDeviceStats(0, "sdc")) 
-#	devList.append(BlockDeviceStats(1, "sda3")) 
-
-#	ds = BlockDeviceStats(0, "sdc") 
+	
+	for dev in netDevs:
+		print "adding " + dev
+		devList.append(NetDeviceStats(count,dev))
+		count += 1
 
 	while 1:
 		time.sleep(1 * interval)
@@ -200,7 +220,6 @@ except Exception, e:
 #curses.nocbreak(); stdscr.keypad(0); curses.echo()
 #curses.endwin()
 
-#except:
 finally:
 	curses.nocbreak(); stdscr.keypad(0); curses.echo()
 	curses.endwin()
