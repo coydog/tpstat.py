@@ -166,10 +166,12 @@ try:
 	if len(sys.argv) == 1: # TODO:print stderr correctly
 		print "Error: need a device list on the command line"
 
-	for arg in sys.argv:
+	blockDevs = sys.argv;
+
+	for dev in blockDevs:
 		if count > 0: # LOL
-			print "adding " + arg
-			devList.append(BlockDeviceStats(count-1, arg))
+			print "adding " + dev 
+			devList.append(BlockDeviceStats(count-1, dev))
 		count += 1
 
 	devList.append(NetDeviceStats(count-1, "p5p1"))
