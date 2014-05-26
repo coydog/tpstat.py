@@ -169,10 +169,10 @@ try:
 	for arg in sys.argv:
 		if count > 0: # LOL
 			print "adding " + arg
-			devList.append(BlockDeviceStats(count, arg))
+			devList.append(BlockDeviceStats(count-1, arg))
 		count += 1
 
-	devList.append(NetDeviceStats(count, "p5p1"))
+	devList.append(NetDeviceStats(count-1, "p5p1"))
 	count += 1
 		
 #	devList.append(BlockDeviceStats(0, "sdc")) 
