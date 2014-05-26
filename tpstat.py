@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 #
 
+import traceback
 import time
 import curses
 from os import statvfs,sys
@@ -9,6 +10,14 @@ from procfs import Proc
 #interval = 0.1
 k = 1024
 interval = .1
+
+# This stuff is good canditate for __init__
+# TODO: clean this up; these are globals accessed from 
+# pretty much everywhere.
+proc = Proc()
+stdscr = curses.initscr()
+curses.noecho()
+curses.cbreak() # handle input before receiving newlines
 
 def getMounts (device):
 	"work in progress, will eventually look up mounts per device"
@@ -27,25 +36,44 @@ def getMounts (device):
 
 #	return ret
 
-
-
-class netDeviceStats:
-	"per-interface statistics and display methods"
+class DeviceStats(object):
+	"parent class for different device types" 
 	def __init__(self, position, dev):
-		self.lines = 6
+		if type(self) == DeviceStats:
+			raise Exception ("DeviceStats is an abstract class")
+		self.lines = 6 # should be overrideable
 		self.position = position
 		self.dev = dev
 		self.count = 0
-		self.val = proc.net.dev[self.dev].receive.bytes
+		self.fetch(dev) # TODO: inheritance. if I call this here in super's init
+					 # will it call the child method?
+		#TODO: encapsulate, add write stats
 		self.lastVal = self.val
 		self.delta = 0
 		self.avg = 0
 		self.peak = 0
 		self.total = 0
+
+	def fetch(self, dev):
+		"virtual method to fetch device-specific stats from procfs"
+		pass
+
+
+
+class NetDeviceStats(DeviceStats):
+	"per-interface statistics and display methods"
+	def __init__(self, position, dev):
+		super(NetDeviceStats, self).__init__(position, dev)
+
+	def fetch(self, dev):
+		# needs dev as an arg to avoid circular dependencies in
+		# parent and subclass ctors
+		"fetch net device stat value from procfs"
+		self.val = proc.net.dev[dev].receive.bytes
 	
 	def calculate (self):
 		self.count += 1
-		self.val = proc.net.dev[self.dev]["receive"].bytes
+		self.fetch(self.dev)
 		self.delta = self.val - self.lastVal
 		self.total += self.delta
 		self.avg = self.total / self.count
@@ -62,27 +90,22 @@ class netDeviceStats:
 		stdscr.addstr(startLine+4, 0, "Peak:\t" + formatReadableRate(self.peak))
 		stdscr.addstr(startLine+5, 0, "Total:\t" + formatReadableAbs(self.total))
 
-class blockDeviceStats:
+class BlockDeviceStats(DeviceStats):
 	"per-device statistics and methods for displaying them"
 
 	def __init__(self, position, dev):
-		self.lines = 6 # all fields plus a newline
-		self.position = position
-		self.dev = dev
-		self.mounts = getMounts(self.dev)
-		self.sectorSize = statvfs("/dev/" + self.dev).f_bsize
-		self.count = 0
-		self.val = proc.diskstats[self.dev].read.sectors * self.sectorSize
-		self.lastVal = self.val
-		self.delta = 0
-		self.avg = 0
-		self.peak = 0
-		self.total = 0
-#		print "sectorSize: " , self.sectorSize
+		self.sectorSize = statvfs("/dev/" + dev).f_bsize
+		super(BlockDeviceStats, self).__init__(position, dev)
+		self.mounts = ""
+		#self.mounts = getMounts(self.dev)
+
+	def fetch(self, dev):
+		"fetch block dev stats from procfs"
+		self.val = proc.diskstats[dev].read.sectors * self.sectorSize
 
 	def calculate (self):
 		self.count += 1
-		self.val = proc.diskstats[self.dev].read.sectors * self.sectorSize
+		self.fetch(self.dev)
 		self.delta = (self.val - self.lastVal) 
 		self.total += self.delta
 		self.avg = self.total / self.count #TODO some math with interval for rate
@@ -135,12 +158,6 @@ def formatReadableRate(bytes, bits = False):
 	return ret
 
 
-# This stuff is good canditate for __init__
-proc = Proc()
-
-stdscr = curses.initscr()
-curses.noecho()
-curses.cbreak() # handle input before receiving newlines
 
 #TODO: use list of devices and gather from each
 try:
@@ -152,16 +169,16 @@ try:
 	for arg in sys.argv:
 		if count > 0: # LOL
 			print "adding " + arg
-			devList.append(blockDeviceStats(count, arg))
+			devList.append(BlockDeviceStats(count, arg))
 		count += 1
 
-	devList.append(netDeviceStats(count, "p5p1"))
+	devList.append(NetDeviceStats(count, "p5p1"))
 	count += 1
 		
-#	devList.append(blockDeviceStats(0, "sdc")) 
-#	devList.append(blockDeviceStats(1, "sda3")) 
+#	devList.append(BlockDeviceStats(0, "sdc")) 
+#	devList.append(BlockDeviceStats(1, "sda3")) 
 
-#	ds = blockDeviceStats(0, "sdc") 
+#	ds = BlockDeviceStats(0, "sdc") 
 
 	while 1:
 		time.sleep(1 * interval)
@@ -174,10 +191,14 @@ try:
 except Exception, e:
 	print "In except block"
 	print e
-	#time.sleep(1)
 	curses.nocbreak(); stdscr.keypad(0); curses.echo()
 	curses.endwin()
+	print(traceback.format_exc())
+	#time.sleep(1)
+#curses.nocbreak(); stdscr.keypad(0); curses.echo()
+#curses.endwin()
 
-except:
+#except:
+finally:
 	curses.nocbreak(); stdscr.keypad(0); curses.echo()
 	curses.endwin()
