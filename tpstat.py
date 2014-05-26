@@ -179,7 +179,6 @@ try:
 			netDevs = arg.split(",")
 			print "parsed netDevs:" + str(netDevs)
 
-
 	devList = []
 	count = 0
 	#TODO: clean this up
