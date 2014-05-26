@@ -22,9 +22,9 @@ Released under the terms of the GNU General Public License, version 3.
 Some features are still works in progress. This includes mount point lookup and
 network device support.
 
-Invoke it on the command line with a list of block devices to monitor:
-
-  `tpmon.py sda sdc sdb3 sdb2 sdb`
+Invoke it on the command line with -i and/or -b. Each of these options takes
+a comma-delimited list of devices as an argument:
+  `tpmon.py -b sda,sdc,sdb3,sdb2,sdb -i eth0,eth1`
 
 This was written largely as an exercise to help me learn curses and Python OOP,
 so it may be rough around the edges. Feel free to report bugs.
