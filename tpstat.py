@@ -163,7 +163,7 @@ def formatReadableRate(bytes, bits = False):
 #TODO: use list of devices and gather from each
 try:
 	blockDevs,netDevs = [],[]
-	optlist, args = getopt.getopt(sys.argv[1:], "b:i:")
+	optlist, args = getopt.getopt(sys.argv[1:], "b:i:t:")
 #blockDevs = []
 	print str(optlist)+str(args)
 	for i in optlist:
@@ -178,6 +178,9 @@ try:
 		elif opt == "-i":
 			netDevs = arg.split(",")
 			print "parsed netDevs:" + str(netDevs)
+		elif opt == "-t":
+			interval = float(arg)
+			print "parsed inteval:" + str(interval)
 
 	devList = []
 	count = 0
