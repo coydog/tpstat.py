@@ -36,6 +36,15 @@ def getMounts (device):
 #		ret.append(str(mount))
 
 #	return ret
+class StatTracker(object):
+	def __init__(self):
+		val = 0;
+		lastVal = 0
+		delta = 0
+		avg = 0
+		peak = 0
+		total = 0
+		
 
 class DeviceStats(object):
 	"parent class for different device types" 
@@ -45,15 +54,18 @@ class DeviceStats(object):
 		self.lines = 6 # should be overrideable
 		self.position = position
 		self.dev = dev
-		self.count = 0
+
+		self.readTracker = StatTracker()
+
+		self.readTracker.count = 0
 		self.fetch(dev) # TODO: inheritance. if I call this here in super's init
 					 # will it call the child method?
 		#TODO: encapsulate, add write stats
-		self.lastVal = self.val
-		self.delta = 0
-		self.avg = 0
-		self.peak = 0
-		self.total = 0
+		self.readTracker.lastVal = self.readTracker.val
+		self.readTracker.delta = 0
+		self.readTracker.avg = 0
+		self.readTracker.peak = 0
+		self.readTracker.total = 0
 
 	def fetch(self, dev):
 		"virtual method to fetch device-specific stats from procfs"
@@ -70,26 +82,27 @@ class NetDeviceStats(DeviceStats):
 		# needs dev as an arg to avoid circular dependencies in
 		# parent and subclass ctors
 		"fetch net device stat value from procfs"
-		self.val = proc.net.dev[dev].receive.bytes
+		self.readTracker.val = proc.net.dev[dev].receive.bytes
+		#self.writeTracker.val = proc.net.dev[dev].transmit.bytes
 	
 	def calculate (self):
-		self.count += 1
+		self.readTracker.count += 1
 		self.fetch(self.dev)
-		self.delta = self.val - self.lastVal
-		self.total += self.delta
-		self.avg = self.total / self.count
-		if self.delta > self.peak:
-			self.peak = self.delta
-		self.lastVal = self.val
+		self.readTracker.delta = self.readTracker.val - self.readTracker.lastVal
+		self.readTracker.total += self.readTracker.delta
+		self.readTracker.avg = self.readTracker.total / self.readTracker.count
+		if self.readTracker.delta > self.readTracker.peak:
+			self.readTracker.peak = self.readTracker.delta
+		self.readTracker.lastVal = self.readTracker.val
 
 	def printStats (self):
 		startLine = self.position * self.lines
 		stdscr.addstr(startLine, 0, "interface " + self.dev + "\t ")
-		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.delta))
-		stdscr.addstr(startLine+2, 0, "\t" + formatReadableRate(self.delta, True))
-		stdscr.addstr(startLine+3, 0, "Avg:\t" + formatReadableRate(self.avg))
-		stdscr.addstr(startLine+4, 0, "Peak:\t" + formatReadableRate(self.peak))
-		stdscr.addstr(startLine+5, 0, "Total:\t" + formatReadableAbs(self.total))
+		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.readTracker.delta))
+		stdscr.addstr(startLine+2, 0, "\t" + formatReadableRate(self.readTracker.delta, True))
+		stdscr.addstr(startLine+3, 0, "Avg:\t" + formatReadableRate(self.readTracker.avg))
+		stdscr.addstr(startLine+4, 0, "Peak:\t" + formatReadableRate(self.readTracker.peak))
+		stdscr.addstr(startLine+5, 0, "Total:\t" + formatReadableAbs(self.readTracker.total))
 
 class BlockDeviceStats(DeviceStats):
 	"per-device statistics and methods for displaying them"
@@ -102,27 +115,27 @@ class BlockDeviceStats(DeviceStats):
 
 	def fetch(self, dev):
 		"fetch block dev stats from procfs"
-		self.val = proc.diskstats[dev].read.sectors * self.sectorSize
+		self.readTracker.val = proc.diskstats[dev].read.sectors * self.sectorSize
+		#self.writeTracker.val = proc.diskstats[dev].write.sectors * self.sectorSize
 
 	def calculate (self):
-		self.count += 1
+		self.readTracker.count += 1
 		self.fetch(self.dev)
-		self.delta = (self.val - self.lastVal) 
-		self.total += self.delta
-		self.avg = self.total / self.count #TODO some math with interval for rate
-		if self.delta > self.peak:
-			self.peak = self.delta
-
-		self.lastVal = self.val
+		self.readTracker.delta = (self.readTracker.val - self.readTracker.lastVal) 
+		self.readTracker.total += self.readTracker.delta
+		self.readTracker.avg = self.readTracker.total / self.readTracker.count #TODO some math with interval for rate
+		if self.readTracker.delta > self.readTracker.peak:
+			self.readTracker.peak = self.readTracker.delta
+		self.readTracker.lastVal = self.readTracker.val
 		#time.sleep(1 * interval)
 
 	def printStats (self):
 		startLine = self.position * self.lines
 		stdscr.addstr(startLine, 0, "/dev/" + self.dev + "\t" + " " + str(self.mounts));
-		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.delta))
-		stdscr.addstr(startLine+2, 0, "Avg:\t" + formatReadableRate(self.avg))
-		stdscr.addstr(startLine+3, 0, "Peak:\t" + formatReadableRate(self.peak))
-		stdscr.addstr(startLine+4, 0, "Total:\t" + formatReadableAbs(self.total))
+		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.readTracker.delta))
+		stdscr.addstr(startLine+2, 0, "Avg:\t" + formatReadableRate(self.readTracker.avg))
+		stdscr.addstr(startLine+3, 0, "Peak:\t" + formatReadableRate(self.readTracker.peak))
+		stdscr.addstr(startLine+4, 0, "Total:\t" + formatReadableAbs(self.readTracker.total))
 		
 
 def formatReadableAbs(bytes):
