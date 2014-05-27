@@ -71,6 +71,15 @@ class DeviceStats(object):
 		"virtual method to fetch device-specific stats from procfs"
 		pass
 
+	def calculate (self):
+		self.readTracker.count += 1
+		self.fetch(self.dev)
+		self.readTracker.delta = self.readTracker.val - self.readTracker.lastVal
+		self.readTracker.total += self.readTracker.delta
+		self.readTracker.avg = self.readTracker.total / self.readTracker.count
+		if self.readTracker.delta > self.readTracker.peak:
+			self.readTracker.peak = self.readTracker.delta
+		self.readTracker.lastVal = self.readTracker.val
 
 
 class NetDeviceStats(DeviceStats):
@@ -85,16 +94,6 @@ class NetDeviceStats(DeviceStats):
 		self.readTracker.val = proc.net.dev[dev].receive.bytes
 		#self.writeTracker.val = proc.net.dev[dev].transmit.bytes
 	
-	def calculate (self):
-		self.readTracker.count += 1
-		self.fetch(self.dev)
-		self.readTracker.delta = self.readTracker.val - self.readTracker.lastVal
-		self.readTracker.total += self.readTracker.delta
-		self.readTracker.avg = self.readTracker.total / self.readTracker.count
-		if self.readTracker.delta > self.readTracker.peak:
-			self.readTracker.peak = self.readTracker.delta
-		self.readTracker.lastVal = self.readTracker.val
-
 	def printStats (self):
 		startLine = self.position * self.lines
 		stdscr.addstr(startLine, 0, "interface " + self.dev + "\t ")
@@ -117,17 +116,6 @@ class BlockDeviceStats(DeviceStats):
 		"fetch block dev stats from procfs"
 		self.readTracker.val = proc.diskstats[dev].read.sectors * self.sectorSize
 		#self.writeTracker.val = proc.diskstats[dev].write.sectors * self.sectorSize
-
-	def calculate (self):
-		self.readTracker.count += 1
-		self.fetch(self.dev)
-		self.readTracker.delta = (self.readTracker.val - self.readTracker.lastVal) 
-		self.readTracker.total += self.readTracker.delta
-		self.readTracker.avg = self.readTracker.total / self.readTracker.count #TODO some math with interval for rate
-		if self.readTracker.delta > self.readTracker.peak:
-			self.readTracker.peak = self.readTracker.delta
-		self.readTracker.lastVal = self.readTracker.val
-		#time.sleep(1 * interval)
 
 	def printStats (self):
 		startLine = self.position * self.lines
