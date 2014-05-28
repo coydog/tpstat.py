@@ -37,13 +37,24 @@ def getMounts (device):
 
 #	return ret
 class StatTracker(object):
-	def __init__(self):
-		val = 0;
-		lastVal = 0
-		delta = 0
-		avg = 0
-		peak = 0
-		total = 0
+	def __init__(self, initialVal):
+		self.count = 0
+		self.val = initialVal;
+		self.lastVal = self.val
+		self.delta = 0
+		self.avg = 0
+		self.peak = 0
+		self.total = 0
+
+	def calculate(self, newVal):
+		self.count += 1
+		self.val = newVal
+		self.delta = self.val - self.lastVal
+		self.total += self.delta
+		self.avg = self.total / self.count
+		if self.delta >self.peak:
+			self.peak = self.delta
+		self.lastVal = self.val
 		
 
 class DeviceStats(object):
@@ -55,31 +66,20 @@ class DeviceStats(object):
 		self.position = position
 		self.dev = dev
 
-		self.readTracker = StatTracker()
+		self.readTracker = StatTracker(self.fetchRead())
+		self.writeTracker = StatTracker(self.fetchWrite())
 
-		self.readTracker.count = 0
-		self.fetch(dev) # TODO: inheritance. if I call this here in super's init
-					 # will it call the child method?
-		#TODO: encapsulate, add write stats
-		self.readTracker.lastVal = self.readTracker.val
-		self.readTracker.delta = 0
-		self.readTracker.avg = 0
-		self.readTracker.peak = 0
-		self.readTracker.total = 0
 
-	def fetch(self, dev):
+	def fetchRead(self):
+		"virtual method to fetch device-specific stats from procfs"
+		pass
+	def fetchWrite(self):
 		"virtual method to fetch device-specific stats from procfs"
 		pass
 
 	def calculate (self):
-		self.readTracker.count += 1
-		self.fetch(self.dev)
-		self.readTracker.delta = self.readTracker.val - self.readTracker.lastVal
-		self.readTracker.total += self.readTracker.delta
-		self.readTracker.avg = self.readTracker.total / self.readTracker.count
-		if self.readTracker.delta > self.readTracker.peak:
-			self.readTracker.peak = self.readTracker.delta
-		self.readTracker.lastVal = self.readTracker.val
+		self.readTracker.calculate(self.fetchRead())
+		self.writeTracker.calculate(self.fetchWrite())
 
 
 class NetDeviceStats(DeviceStats):
@@ -87,13 +87,16 @@ class NetDeviceStats(DeviceStats):
 	def __init__(self, position, dev):
 		super(NetDeviceStats, self).__init__(position, dev)
 
-	def fetch(self, dev):
+	def fetchRead(self):
 		# needs dev as an arg to avoid circular dependencies in
 		# parent and subclass ctors
 		"fetch net device stat value from procfs"
-		self.readTracker.val = proc.net.dev[dev].receive.bytes
-		#self.writeTracker.val = proc.net.dev[dev].transmit.bytes
+		return proc.net.dev[self.dev].receive.bytes
 	
+	def fetchWrite(self):
+		"fetch net device stat value from procfs"
+		return proc.net.dev[self.dev].transmit.bytes
+
 	def printStats (self):
 		startLine = self.position * self.lines
 		stdscr.addstr(startLine, 0, "interface " + self.dev + "\t ")
@@ -112,10 +115,11 @@ class BlockDeviceStats(DeviceStats):
 		self.mounts = ""
 		#self.mounts = getMounts(self.dev)
 
-	def fetch(self, dev):
+	def fetchRead(self):
 		"fetch block dev stats from procfs"
-		self.readTracker.val = proc.diskstats[dev].read.sectors * self.sectorSize
-		#self.writeTracker.val = proc.diskstats[dev].write.sectors * self.sectorSize
+		return proc.diskstats[self.dev].read.sectors * self.sectorSize
+	def fetchWrite(self):
+		return proc.diskstats[self.dev].write.sectors * self.sectorSize
 
 	def printStats (self):
 		startLine = self.position * self.lines
