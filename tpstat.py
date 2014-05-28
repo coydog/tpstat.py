@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 #
 
 import traceback
@@ -62,7 +62,7 @@ class DeviceStats(object):
 	def __init__(self, position, dev):
 		if type(self) == DeviceStats:
 			raise Exception ("DeviceStats is an abstract class")
-		self.lines = 6 # should be overrideable
+		self.lines = 11 # should be overrideable
 		self.position = position
 		self.dev = dev
 
@@ -100,11 +100,21 @@ class NetDeviceStats(DeviceStats):
 	def printStats (self):
 		startLine = self.position * self.lines
 		stdscr.addstr(startLine, 0, "interface " + self.dev + "\t ")
-		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.readTracker.delta))
-		stdscr.addstr(startLine+2, 0, "\t" + formatReadableRate(self.readTracker.delta, True))
-		stdscr.addstr(startLine+3, 0, "Avg:\t" + formatReadableRate(self.readTracker.avg))
-		stdscr.addstr(startLine+4, 0, "Peak:\t" + formatReadableRate(self.readTracker.peak))
-		stdscr.addstr(startLine+5, 0, "Total:\t" + formatReadableAbs(self.readTracker.total))
+		stdscr.addstr(startLine+1, 0, "Rd Cur:\t\t" + formatReadableRate(self.readTracker.delta))
+		stdscr.addstr(startLine+2, 0, "\t\t" + formatReadableRate(self.readTracker.delta, True))
+		stdscr.addstr(startLine+3, 0, "Rd Avg:\t\t" + formatReadableRate(self.readTracker.avg))
+		stdscr.addstr(startLine+4, 0, "Rd Peak:\t" + formatReadableRate(self.readTracker.peak))
+		stdscr.addstr(startLine+5, 0, "Rd Total:\t" + formatReadableAbs(self.readTracker.total))
+
+		stdscr.addstr(startLine+6, 0, "Wr Cur:\t\t" + formatReadableRate(self.writeTracker.delta))
+		stdscr.addstr(startLine+7, 0, "\t\t" + formatReadableRate(self.writeTracker.delta, True))
+		stdscr.addstr(startLine+8, 0, "Wr Avg:\t\t" + formatReadableRate(self.writeTracker.avg))
+		stdscr.addstr(startLine+9, 0, "Wr Peak:\t" + formatReadableRate(self.writeTracker.peak))
+		stdscr.addstr(startLine+10,0, "Wr Total:\t" + formatReadableAbs(self.writeTracker.total))
+
+		stdscr.addstr(startLine+11,0, "R/W Cur:\t" + formatReadableRate(self.readTracker.delta
+																	+	self.writeTracker.delta, True))
+												
 
 class BlockDeviceStats(DeviceStats):
 	"per-device statistics and methods for displaying them"
@@ -124,11 +134,19 @@ class BlockDeviceStats(DeviceStats):
 	def printStats (self):
 		startLine = self.position * self.lines
 		stdscr.addstr(startLine, 0, "/dev/" + self.dev + "\t" + " " + str(self.mounts));
-		stdscr.addstr(startLine+1, 0, "Cur:\t" + formatReadableRate(self.readTracker.delta))
-		stdscr.addstr(startLine+2, 0, "Avg:\t" + formatReadableRate(self.readTracker.avg))
-		stdscr.addstr(startLine+3, 0, "Peak:\t" + formatReadableRate(self.readTracker.peak))
-		stdscr.addstr(startLine+4, 0, "Total:\t" + formatReadableAbs(self.readTracker.total))
-		
+		stdscr.addstr(startLine+1, 0, "Rd Cur:\t\t" + formatReadableRate(self.readTracker.delta))
+		stdscr.addstr(startLine+2, 0, "Rd Avg:\t\t" + formatReadableRate(self.readTracker.avg))
+		stdscr.addstr(startLine+3, 0, "Rd Peak:\t" + formatReadableRate(self.readTracker.peak))
+		stdscr.addstr(startLine+4, 0, "Rd Total:\t" + formatReadableAbs(self.readTracker.total))
+
+
+		stdscr.addstr(startLine+5, 0, "Wr Cur:\t\t" + formatReadableRate(self.writeTracker.delta))
+		stdscr.addstr(startLine+6, 0, "Wr Avg:\t\t" + formatReadableRate(self.writeTracker.avg))
+		stdscr.addstr(startLine+7, 0, "Wr Peak:\t" + formatReadableRate(self.writeTracker.peak))
+		stdscr.addstr(startLine+8, 0, "Wr Total:\t" + formatReadableAbs(self.writeTracker.total))
+
+		stdscr.addstr(startLine+9, 0, "R/W Cur:\t" + formatReadableRate(self.readTracker.delta
+																	+ self.writeTracker.delta, True))
 
 def formatReadableAbs(bytes):
 	ret = str(bytes) + "\tbytes\t"
