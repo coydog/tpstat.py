@@ -149,15 +149,15 @@ class BlockDeviceStats(DeviceStats):
 																	+ self.writeTracker.delta, True))
 
 def formatReadableAbs(bytes):
-	ret = str(bytes) + "\tbytes\t"
+	ret = str(bytes) + "\t\tbytes\t"
 	if bytes >= k:
-		ret = str(float(bytes) / k) + "\tKB\t"
+		ret = str(float(bytes) / k) + "\tKB\t\t"
 	if bytes >= k**2:
-		ret = str(float(bytes) / k**2) + "\tMB\t"
+		ret = str(float(bytes) / k**2) + "\tMB\t\t"
 	if bytes >= k**3:
-		ret = str(float(bytes) / k**3) + "\tGB\t"
+		ret = str(float(bytes) / k**3) + "\tGB\t\t"
 	if bytes >= k**4:
-		ret = str(float(bytes) / k**4) + "\tTB\t"
+		ret = str(float(bytes) / k**4) + "\tTB\t\t"
 	if bytes >= k**5:
 		ret = str(float(bytes) / k**5) + "\tExabytes\t"
 	return ret
@@ -165,18 +165,18 @@ def formatReadableAbs(bytes):
 
 def formatReadableRate(bytes, bits = False):
 	bytesPerSecond = float(bytes) / interval
-	ret = str(bytesPerSecond) + "\tbytes/sec\t"
+	ret = str(bytesPerSecond) + "\t\tbytes/sec\t"
 	if bytesPerSecond >= k:
-		ret = str(bytesPerSecond / k) + "\tKB/sec\t"
+		ret = str(bytesPerSecond / k) + "\tKB/sec\t\t"
 	if bytesPerSecond >= k**2:
 		if bits:
-			ret = str((bytesPerSecond / k**2) * 8) + "\tMbps\t"
+			ret = str((bytesPerSecond / k**2) * 8) + "\tMbps\t\t"
 		else:
-			ret = str(bytesPerSecond / k**2) + "\tMB/sec\t"
+			ret = str(bytesPerSecond / k**2) + "\tMB/sec\t\t"
 	if bytesPerSecond >= k**3:
-		ret = str(bytesPerSecond / k**3) + "\tGB/sec\t"
+		ret = str(bytesPerSecond / k**3) + "\tGB/sec\t\t"
 	if bytesPerSecond >= k**4:
-		ret = str(bytesPerSecond / k**4) + "\tTB/sec\t"
+		ret = str(bytesPerSecond / k**4) + "\tTB/sec\t\t"
 	if bytesPerSecond >= k**5:
 		ret = str(bytesPerSecond / k**4) + "\tHello future person!"
 	return ret
