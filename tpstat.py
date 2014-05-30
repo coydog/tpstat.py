@@ -165,16 +165,27 @@ def formatReadableAbs(bytes):
 
 def formatReadableRate(bytes, bits = False):
 	bytesPerSecond = float(bytes) / interval
-	ret = str(bytesPerSecond) + "\t\tbytes/sec\t"
+	# TODO: reverse order, switch to elifs. More efficient and readable that way.	
+	# TODO: formatting with precision of 4, no decimal for bytes
+	if bits:
+		ret = str((bytesPerSecond) * 8) + "\t\tbps\t"
+	else:
+		ret = str(bytesPerSecond) + "\t\tbytes/sec\t"
 	if bytesPerSecond >= k:
-		ret = str(bytesPerSecond / k) + "\tKB/sec\t\t"
+		if bits:
+			ret = str((bytesPerSecond / k) * 8) + "\tKbps\t\t"
+		else:
+			ret = str(bytesPerSecond / k) + "\tKB/sec\t\t"
 	if bytesPerSecond >= k**2:
 		if bits:
 			ret = str((bytesPerSecond / k**2) * 8) + "\tMbps\t\t"
 		else:
 			ret = str(bytesPerSecond / k**2) + "\tMB/sec\t\t"
 	if bytesPerSecond >= k**3:
-		ret = str(bytesPerSecond / k**3) + "\tGB/sec\t\t"
+		if bits:
+			ret = str((bytesPerSecond / k**3) * 8) + "\tGbps/sec\t\t"
+		else:
+			ret = str(bytesPerSecond / k**3) + "\tGB/sec\t\t"
 	if bytesPerSecond >= k**4:
 		ret = str(bytesPerSecond / k**4) + "\tTB/sec\t\t"
 	if bytesPerSecond >= k**5:
